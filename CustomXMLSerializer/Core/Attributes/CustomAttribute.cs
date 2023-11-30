@@ -16,7 +16,7 @@ public abstract class CustomAttribute : Attribute
     }
     
     [AllowNull]
-    public string ElementName
+    public string? ElementName
     {
         get => _elementName ?? string.Empty;
         set => _elementName = value;

@@ -2,12 +2,14 @@ using CustomXMLSerializer.Core.Attributes;
 
 namespace CustomXMLSerializer.Models;
 
-[CustomXmlRoot(ElementName = "test_root")]
+[CustomXmlRoot(ElementName = "fch")]
 public class SerializingTestModel
 {
-    [CustomXmlAttribute(ElementName = "version")] public string Version { get; set; } = "4.0.1";
-    [CustomXmlAttribute(ElementName = "RootAttribute1")] public string RootAttribute1 { get; set; }
-    [CustomXmlAttribute(ElementName = "RootAttribute2")] public string RootAttribute2 { get; set; }
+    [CustomXmlAttribute(ElementName = "version", DefaultValue = "4.0.1")] 
+    public string Version { get; set; }
+    
+    [CustomXmlAttribute(ElementName = "rootAttribute1")] public string RootAttribute1 { get; set; }
+    [CustomXmlAttribute(ElementName = "rootAttribute2")] public string RootAttribute2 { get; set; }
     [CustomXmlHeaderElement(ElementName = "headerString")] public string HeaderString { get; set; }
     [CustomXmlHeaderElement(ElementName = "headerClass")] public Header HeaderClass { get; set; }
     [CustomXmlHeaderElement(ElementName = "headerBlock")] public IEnumerable<Header> HeaderBlock { get; set; }

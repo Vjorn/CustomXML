@@ -22,5 +22,16 @@ public class CustomXmlElementAttribute : CustomElementAttribute { }
 
 
 
-[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
-public class CustomXmlAttributeAttribute : CustomAttributeAttribute { }
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter |
+                AttributeTargets.ReturnValue)]
+public class CustomXmlAttributeAttribute : CustomAttributeAttribute
+{
+    private string? _defaultValue;
+    
+    [AllowNull]
+    public string? DefaultValue
+    {
+        get => _defaultValue ?? string.Empty;
+        set => _defaultValue = value;
+    }
+}
