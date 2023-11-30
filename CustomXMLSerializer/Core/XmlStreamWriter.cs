@@ -25,7 +25,7 @@ public class XmlStreamWriter
         _writer.Write(">");
     }
 
-    public void WriteAttributeString(string attributeName, string attributeValue)
+    public void WriteAttributeString(string? attributeName, string attributeValue)
     {
         _writer.Write($" {attributeName}=\"{attributeValue}\"");
     }
@@ -53,6 +53,6 @@ public class XmlStreamWriter
 
 public class ElementAttribute
 {
-    public string AttributeName { get; set; }
+    public string? AttributeName { get; set; }
     public string? AttributeValue { get; set; }
 }

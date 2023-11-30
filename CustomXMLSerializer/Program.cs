@@ -5,15 +5,7 @@ using CustomXMLSerializer.Models;
 
 Console.WriteLine("Hello, World!");
 
-Dictionary<string, ElementInfo> modelInfo = ModelInfoCollecter.CollectModelInformation(typeof(SerializingTestModel));
-
-
-
-// TestDataBuilder builder = new TestDataBuilder();
-// SerializingTestModel root = builder.BuildData();
-//
-// OptimizedXmlSerializer serializer = new OptimizedXmlSerializer();
-// serializer.Serialize(root, "output.xml");
-
+TestDataBuilder builder = new TestDataBuilder();
+SerializingTestModel root = builder.BuildData();
 
 Console.WriteLine("Bye, World!");

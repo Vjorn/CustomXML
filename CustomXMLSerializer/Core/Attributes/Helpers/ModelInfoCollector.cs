@@ -3,12 +3,40 @@ using CustomXMLSerializer.Models;
 
 namespace CustomXMLSerializer.Core.Attributes.Helpers;
 
-public static class ModelInfoCollecter
+public class ModelInfoCollector
 {
-    public static Dictionary<string, ElementInfo> CollectModelInformation(Type modelType)
+    private readonly IEnumerable<ElementInfo> _modelInformation;
+    
+    public ModelInfoCollector(Type modelType)
     {
-        Dictionary<string, ElementInfo> modelInfoResult = new Dictionary<string, ElementInfo>();
-        
+        _modelInformation = CollectModelInformation(modelType);
+    }
+
+    public IEnumerable<ElementInfo> GetModelInformation()
+    {
+        return _modelInformation;
+    }
+
+    public ElementInfo GetRootElementInfo()
+    {
+        return _modelInformation.First(e => e.Type == ElementType.Root);
+    }
+
+    public ElementInfo GetAttributeByKey(string attributeKey)
+    {
+        return _modelInformation.First(e => e.Key == attributeKey && e.Type == ElementType.Attribute);
+    }
+    
+    public string? GetAttributeNameByKey(string attributeKey)
+    {
+        return _modelInformation
+            .Where(e => e.Key == attributeKey && e.Type == ElementType.Attribute)
+            .Select(e => e.Name)
+            .First();
+    }
+    
+    private IEnumerable<ElementInfo> CollectModelInformation(Type modelType)
+    {
         CustomXmlRootAttribute? xmlRootAttribute = (CustomXmlRootAttribute)Attribute.GetCustomAttribute(
             modelType, typeof(CustomXmlRootAttribute))!;
             
@@ -16,28 +44,21 @@ public static class ModelInfoCollecter
         {
             throw new ArgumentNullException($"{nameof(CustomXmlRootAttribute)} doesn't set as class root attribute");
         }
+
+        yield return new ElementInfo(modelType.Name, xmlRootAttribute.ElementName, ElementType.Root);
         
-        modelInfoResult.Add(modelType.Name, new ElementInfo(xmlRootAttribute.ElementName, ElementType.Root));
-        
-        // foreach ((string Key, ElementInfo Value) rootAttribute in GetAttributes(modelType.Name, modelType, ElementType.RootAttribute))
-        // {
-        //     modelInfoResult.Add(rootAttribute.Key, rootAttribute.Value);
-        // }
-        
-        foreach ((string Key, ElementInfo Value) headerElement in GetHeaderElements(modelType))
+        foreach (ElementInfo headerElement in GetHeaderElements(modelType))
         {
-            modelInfoResult.Add(headerElement.Key, headerElement.Value);
+            yield return headerElement;
         }
         
-        foreach ((string Key, ElementInfo Value) commonElement in GetCommonElements(modelType.Name, modelType))
+        foreach (ElementInfo commonElement in GetCommonElements(modelType.Name, modelType))
         {
-            modelInfoResult.Add(commonElement.Key, commonElement.Value);
+            yield return commonElement;
         }
-        
-        return modelInfoResult;
     }
 
-    private static IEnumerable<(string, ElementInfo)> GetAttributes(string propertyKeyRoot, Type type, ElementType attributeType)
+    private IEnumerable<ElementInfo> GetAttributes(string propertyKeyRoot, Type type, ElementType attributeType)
     {
         IEnumerable<PropertyInfo> attributeProperties = type.GetProperties()
             .Where(p => p.HasAttributeOfType<CustomAttributeAttribute>());
@@ -46,7 +67,7 @@ public static class ModelInfoCollecter
         {
             CustomXmlAttributeAttribute? xmlAttribute = attributeProperty
                 .GetCustomAttribute<CustomXmlAttributeAttribute>();
-            string customXmlAttributeName = xmlAttribute is null
+            string? customXmlAttributeName = xmlAttribute is null
                 ? attributeProperty.Name
                 : xmlAttribute.ElementName;
 
@@ -61,12 +82,11 @@ public static class ModelInfoCollecter
                 continue;
             }
 
-            yield return ($"{propertyKeyRoot}.{attributeProperty.Name}", 
-                new ElementInfo(customXmlAttributeName, attributeType));
+            yield return new ElementInfo($"{propertyKeyRoot}.{attributeProperty.Name}", customXmlAttributeName, attributeType, xmlAttribute.DefaultValue);
         }
     }
 
-    private static IEnumerable<(string, ElementInfo)> GetHeaderElements(Type rootType)
+    private IEnumerable<ElementInfo> GetHeaderElements(Type rootType)
     {
         IEnumerable<PropertyInfo> headerProperties = rootType.GetProperties()
             .Where(p => p.HasAttributeOfType<CustomXmlHeaderElementAttribute>());
@@ -92,12 +112,12 @@ public static class ModelInfoCollecter
                 {
                     string blockPropertyKey = $"{headerPropertyKey}.{argument.Name}";
                     
-                    foreach ((string Key, ElementInfo Value) subElement in GetCommonElements(blockPropertyKey, argument))
+                    foreach (ElementInfo subElement in GetCommonElements(blockPropertyKey, argument))
                     {
-                        yield return (subElement.Key, subElement.Value);
+                        yield return subElement;
                     }
                     
-                    yield return (blockPropertyKey, new ElementInfo(xmlAttribute.ElementName, ElementType.HeaderBlock));
+                    yield return new ElementInfo(blockPropertyKey, xmlAttribute.ElementName, ElementType.HeaderBlock);
                 }
                 
                 continue;
@@ -105,24 +125,24 @@ public static class ModelInfoCollecter
             
             if (!headerProperty.PropertyType.IsClass || headerProperty.PropertyType == typeof(string))
             {
-                yield return (headerPropertyKey, new ElementInfo(xmlAttribute.ElementName, ElementType.HeaderElement));
+                yield return new ElementInfo(headerPropertyKey, xmlAttribute.ElementName, ElementType.HeaderElement);
             }
 
             if (headerProperty.PropertyType.IsClass)
             {
-                foreach ((string Key, ElementInfo Value) subElement in GetCommonElements(headerPropertyKey, headerProperty.PropertyType))
+                foreach (ElementInfo subElement in GetCommonElements(headerPropertyKey, headerProperty.PropertyType))
                 {
-                    yield return (subElement.Key, subElement.Value);
+                    yield return subElement;
                 }
             }
         }
     }
 
-    private static IEnumerable<(string, ElementInfo)> GetCommonElements(string headerPropertyKey, Type headerType)
+    private IEnumerable<ElementInfo> GetCommonElements(string headerPropertyKey, Type headerType)
     {
-        foreach ((string Key, ElementInfo Value) attributeInfo in GetAttributes(headerPropertyKey, headerType, ElementType.Attribute))
+        foreach (ElementInfo attributeInfo in GetAttributes(headerPropertyKey, headerType, ElementType.Attribute))
         {
-            yield return (attributeInfo.Key, attributeInfo.Value);
+            yield return attributeInfo;
         }
         
         IEnumerable<PropertyInfo> subElementProperties = headerType.GetProperties()
@@ -134,7 +154,7 @@ public static class ModelInfoCollecter
             
             CustomXmlElementAttribute? customXmlElement =
                 subElementProperty.GetCustomAttribute<CustomXmlElementAttribute>();
-            string customXmlElementName = customXmlElement is null
+            string? customXmlElementName = customXmlElement is null
                 ? subElementProperty.Name
                 : customXmlElement.ElementName;
             
@@ -147,12 +167,12 @@ public static class ModelInfoCollecter
                 {
                     string blockPropertyKey = $"{headerSubElementPropertyKey}.{argument.Name}";
                     
-                    foreach ((string Key, ElementInfo Value) subElement in GetCommonElements(blockPropertyKey, argument))
+                    foreach (ElementInfo subElement in GetCommonElements(blockPropertyKey, argument))
                     {
-                        yield return (subElement.Key, subElement.Value);
+                        yield return subElement;
                     }
                     
-                    yield return (blockPropertyKey, new ElementInfo(customXmlElementName, ElementType.HeaderBlock));
+                    yield return new ElementInfo(blockPropertyKey, customXmlElementName, ElementType.HeaderBlock);
                 }
                 
                 continue;
@@ -160,14 +180,14 @@ public static class ModelInfoCollecter
             
             if (!subElementProperty.PropertyType.IsClass || subElementProperty.PropertyType == typeof(string))
             {
-                yield return (headerSubElementPropertyKey, new ElementInfo(customXmlElementName, ElementType.HeaderElement));
+                yield return new ElementInfo(headerSubElementPropertyKey, customXmlElementName, ElementType.HeaderElement);
             }
 
             if (subElementProperty.PropertyType.IsClass)
             {
-                foreach ((string Key, ElementInfo Value) subElement in GetCommonElements(headerSubElementPropertyKey, subElementProperty.PropertyType))
+                foreach (ElementInfo subElement in GetCommonElements(headerSubElementPropertyKey, subElementProperty.PropertyType))
                 {
-                    yield return (subElement.Key, subElement.Value);
+                    yield return subElement;
                 }
             }
         }

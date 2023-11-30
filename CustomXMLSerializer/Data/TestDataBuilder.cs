@@ -3,6 +3,7 @@ using System.Text;
 using CustomXMLSerializer.Core;
 using CustomXMLSerializer.Core.Attributes;
 using CustomXMLSerializer.Core.Attributes.Helpers;
+using CustomXMLSerializer.Core.Helpers;
 using CustomXMLSerializer.Models;
 
 namespace CustomXMLSerializer.Data;
@@ -13,37 +14,42 @@ public class TestDataBuilder
     {
         string filePath = "text.xml";
         SerializingTestModel model = new SerializingTestModel();
+
+        ModelInfoCollector modelInfoCollector = new ModelInfoCollector(model.GetType());
         
         using (FileStream fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
         {
-            XmlStringBuilder xmlStringBuilder = new XmlStringBuilder();
+            StringBuilder stringBuilder = new StringBuilder();
+
+            #region Open Root Element
+
+            string versionAttributeKey = $"{model.GetType().Name}.{nameof(model.Version)}";
+            string rootAttribute1Key = $"{model.GetType().Name}.{nameof(model.RootAttribute1)}";
+            string rootAttribute2Key = $"{model.GetType().Name}.{nameof(model.RootAttribute2)}";
+            stringBuilder.Append($"<{modelInfoCollector.GetRootElementInfo().Name}");
+            stringBuilder.Append(XmlStringBuilder.WriteAttributeString(modelInfoCollector.GetAttributeByKey(versionAttributeKey).Name,
+                modelInfoCollector.GetAttributeByKey(versionAttributeKey).DefaultValue));
+            stringBuilder.Append(XmlStringBuilder.WriteAttributeString(modelInfoCollector.GetAttributeByKey(rootAttribute1Key).Name,
+                "RootAttribute1"));
+            stringBuilder.Append(XmlStringBuilder.WriteAttributeString(modelInfoCollector.GetAttributeByKey(rootAttribute2Key).Name,
+                "RootAttribute2"));
+            stringBuilder.Append(">");
+
+            #endregion
+
             
-            CustomXmlRootAttribute? xmlRootAttribute = (CustomXmlRootAttribute)Attribute.GetCustomAttribute(
-                typeof(SerializingTestModel), typeof(CustomXmlRootAttribute))!;
             
-            if (xmlRootAttribute == null)
-            {
-                throw new ArgumentNullException($"{nameof(CustomXmlRootAttribute)} doesn't set as class root attribute");
-            }
+            #region Close Root Element
+
+            stringBuilder.Append(XmlStringBuilder.WriteEndElement(modelInfoCollector.GetRootElementInfo().Name));
+
+            #endregion
+
+            string result = stringBuilder.ToString();
             
-            model.RootAttribute1 = "RootAttribute1";
-            byte[] startRootElementBytes = Encoding.UTF8.GetBytes(xmlStringBuilder
-                .WriteStartElement(xmlRootAttribute.ElementName, GetElementAttributes(model)));
+            byte[] startRootElementBytes = Encoding.UTF8.GetBytes(result);
+            
             fileStream.Write(startRootElementBytes, 0, startRootElementBytes.Length);
-            fileStream.Flush();
-            
-            
-
-            model.HeaderClass = new Header();
-            model.HeaderClass.Header1 = "Header2.Header1";
-            model.HeaderClass.Header2 = "Header2.Header2";
-            model.HeaderClass.Header3 = "Header2.Header3";
-
-            model.HeaderBlock = FillHeaderBlock();
-            
-            byte[] endRootElementBytes = Encoding.UTF8.GetBytes(xmlStringBuilder
-                .WriteEndElement(xmlRootAttribute.ElementName));
-            fileStream.Write(endRootElementBytes, 0, endRootElementBytes.Length);
             fileStream.Flush();
         }
         return model;
@@ -62,6 +68,21 @@ public class TestDataBuilder
             yield return headerBlockElement;
         }
     }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     private IEnumerable<ElementAttribute>? GetElementAttributes<T>(T element) where T : class?
     {
