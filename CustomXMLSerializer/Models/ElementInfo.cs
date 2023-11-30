@@ -27,8 +27,6 @@ public enum ElementType
 {
     Root,
     RootAttribute,
-    HeaderElement,
-    HeaderBlock,
     Element,
     Attribute
 }

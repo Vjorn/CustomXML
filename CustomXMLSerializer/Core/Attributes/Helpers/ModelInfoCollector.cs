@@ -5,11 +5,11 @@ namespace CustomXMLSerializer.Core.Attributes.Helpers;
 
 public class ModelInfoCollector
 {
-    private readonly IEnumerable<ElementInfo> _modelInformation;
+    private readonly List<ElementInfo> _modelInformation = new List<ElementInfo>();
     
     public ModelInfoCollector(Type modelType)
     {
-        _modelInformation = CollectModelInformation(modelType);
+        CollectModelInformation(modelType);
     }
 
     public IEnumerable<ElementInfo> GetModelInformation()
@@ -27,6 +27,11 @@ public class ModelInfoCollector
         return _modelInformation.First(e => e.Key == attributeKey && e.Type == ElementType.Attribute);
     }
     
+    public ElementInfo GetElementByKey(string attributeKey)
+    {
+        return _modelInformation.First(e => e.Key == attributeKey && e.Type == ElementType.Element);
+    }
+    
     public string? GetAttributeNameByKey(string attributeKey)
     {
         return _modelInformation
@@ -35,7 +40,7 @@ public class ModelInfoCollector
             .First();
     }
     
-    private IEnumerable<ElementInfo> CollectModelInformation(Type modelType)
+    private void CollectModelInformation(Type modelType)
     {
         CustomXmlRootAttribute? xmlRootAttribute = (CustomXmlRootAttribute)Attribute.GetCustomAttribute(
             modelType, typeof(CustomXmlRootAttribute))!;
@@ -45,20 +50,15 @@ public class ModelInfoCollector
             throw new ArgumentNullException($"{nameof(CustomXmlRootAttribute)} doesn't set as class root attribute");
         }
 
-        yield return new ElementInfo(modelType.Name, xmlRootAttribute.ElementName, ElementType.Root);
-        
-        foreach (ElementInfo headerElement in GetHeaderElements(modelType))
-        {
-            yield return headerElement;
-        }
+        _modelInformation.Add(new ElementInfo(modelType.Name, xmlRootAttribute.ElementName, ElementType.Root));
         
         foreach (ElementInfo commonElement in GetCommonElements(modelType.Name, modelType))
         {
-            yield return commonElement;
+            _modelInformation.Add(commonElement);
         }
     }
 
-    private IEnumerable<ElementInfo> GetAttributes(string propertyKeyRoot, Type type, ElementType attributeType)
+    private IEnumerable<ElementInfo> GetAttributes(string propertyKeyRoot, Type type)
     {
         IEnumerable<PropertyInfo> attributeProperties = type.GetProperties()
             .Where(p => p.HasAttributeOfType<CustomAttributeAttribute>());
@@ -82,113 +82,66 @@ public class ModelInfoCollector
                 continue;
             }
 
-            yield return new ElementInfo($"{propertyKeyRoot}.{attributeProperty.Name}", customXmlAttributeName, attributeType, xmlAttribute.DefaultValue);
+            yield return new ElementInfo($"{propertyKeyRoot}.{attributeProperty.Name}", customXmlAttributeName, ElementType.Attribute, xmlAttribute.DefaultValue);
         }
     }
 
-    private IEnumerable<ElementInfo> GetHeaderElements(Type rootType)
+    private IEnumerable<ElementInfo> GetCommonElements(string propertyKeyRoot, Type headerType)
     {
-        IEnumerable<PropertyInfo> headerProperties = rootType.GetProperties()
-            .Where(p => p.HasAttributeOfType<CustomXmlHeaderElementAttribute>());
-
-        foreach (PropertyInfo headerProperty in headerProperties)
-        {
-            CustomXmlHeaderElementAttribute? xmlAttribute = headerProperty
-                .GetCustomAttribute<CustomXmlHeaderElementAttribute>();
-
-            if (xmlAttribute is null)
-            {
-                continue;
-            }
-            
-            string headerPropertyKey = $"{rootType.Name}.{headerProperty.Name}";
-
-            if (headerProperty.PropertyType.IsGenericType && 
-                headerProperty.PropertyType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-            {
-                Type[] genericArguments = headerProperty.PropertyType.GetGenericArguments();
-                
-                foreach (Type argument in genericArguments)
-                {
-                    string blockPropertyKey = $"{headerPropertyKey}.{argument.Name}";
-                    
-                    foreach (ElementInfo subElement in GetCommonElements(blockPropertyKey, argument))
-                    {
-                        yield return subElement;
-                    }
-                    
-                    yield return new ElementInfo(blockPropertyKey, xmlAttribute.ElementName, ElementType.HeaderBlock);
-                }
-                
-                continue;
-            }
-            
-            if (!headerProperty.PropertyType.IsClass || headerProperty.PropertyType == typeof(string))
-            {
-                yield return new ElementInfo(headerPropertyKey, xmlAttribute.ElementName, ElementType.HeaderElement);
-            }
-
-            if (headerProperty.PropertyType.IsClass)
-            {
-                foreach (ElementInfo subElement in GetCommonElements(headerPropertyKey, headerProperty.PropertyType))
-                {
-                    yield return subElement;
-                }
-            }
-        }
-    }
-
-    private IEnumerable<ElementInfo> GetCommonElements(string headerPropertyKey, Type headerType)
-    {
-        foreach (ElementInfo attributeInfo in GetAttributes(headerPropertyKey, headerType, ElementType.Attribute))
+        foreach (ElementInfo attributeInfo in GetAttributes(propertyKeyRoot, headerType))
         {
             yield return attributeInfo;
         }
         
-        IEnumerable<PropertyInfo> subElementProperties = headerType.GetProperties()
+        IEnumerable<PropertyInfo> elementProperties = headerType.GetProperties()
             .Where(p => p.HasAttributeOfType<CustomXmlElementAttribute>());
 
-        foreach (PropertyInfo subElementProperty in subElementProperties)
+        foreach (PropertyInfo elementProperty in elementProperties)
         {
-            string headerSubElementPropertyKey = $"{headerPropertyKey}.{subElementProperty.Name}";
+            string elementPropertyKey = $"{propertyKeyRoot}.{elementProperty.Name}";
             
             CustomXmlElementAttribute? customXmlElement =
-                subElementProperty.GetCustomAttribute<CustomXmlElementAttribute>();
-            string? customXmlElementName = customXmlElement is null
-                ? subElementProperty.Name
-                : customXmlElement.ElementName;
+                elementProperty.GetCustomAttribute<CustomXmlElementAttribute>();
             
-            if (subElementProperty.PropertyType.IsGenericType && 
-                subElementProperty.PropertyType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            if (customXmlElement is null)
             {
-                Type[] genericArguments = subElementProperty.PropertyType.GetGenericArguments();
+                continue;
+            }
+            
+            string? customXmlElementName = customXmlElement.ElementName ?? elementProperty.Name;
+            
+            if (elementProperty.PropertyType.IsGenericType && 
+                elementProperty.PropertyType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                Type[] genericArguments = elementProperty.PropertyType.GetGenericArguments();
                 
                 foreach (Type argument in genericArguments)
                 {
-                    string blockPropertyKey = $"{headerSubElementPropertyKey}.{argument.Name}";
                     
-                    foreach (ElementInfo subElement in GetCommonElements(blockPropertyKey, argument))
+                    foreach (ElementInfo subElement in GetCommonElements(elementPropertyKey, argument))
                     {
                         yield return subElement;
                     }
                     
-                    yield return new ElementInfo(blockPropertyKey, customXmlElementName, ElementType.HeaderBlock);
+                    yield return new ElementInfo(elementPropertyKey, customXmlElementName, ElementType.Element);
                 }
                 
                 continue;
             }
             
-            if (!subElementProperty.PropertyType.IsClass || subElementProperty.PropertyType == typeof(string))
+            if (!elementProperty.PropertyType.IsClass || elementProperty.PropertyType == typeof(string))
             {
-                yield return new ElementInfo(headerSubElementPropertyKey, customXmlElementName, ElementType.HeaderElement);
+                yield return new ElementInfo(elementPropertyKey, customXmlElementName, ElementType.Element);
             }
 
-            if (subElementProperty.PropertyType.IsClass)
+            if (elementProperty.PropertyType.IsClass)
             {
-                foreach (ElementInfo subElement in GetCommonElements(headerSubElementPropertyKey, subElementProperty.PropertyType))
+                foreach (ElementInfo subElement in GetCommonElements(elementPropertyKey, elementProperty.PropertyType))
                 {
                     yield return subElement;
                 }
+                
+                yield return new ElementInfo(elementPropertyKey, customXmlElementName, ElementType.Element);
             }
         }
     }
