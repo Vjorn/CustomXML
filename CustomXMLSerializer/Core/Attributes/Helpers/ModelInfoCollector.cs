@@ -133,8 +133,7 @@ public class ModelInfoCollector
             {
                 yield return new ElementInfo(elementPropertyKey, customXmlElementName, ElementType.Element);
             }
-
-            if (elementProperty.PropertyType.IsClass)
+            else
             {
                 foreach (ElementInfo subElement in GetCommonElements(elementPropertyKey, elementProperty.PropertyType))
                 {
