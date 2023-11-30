@@ -228,15 +228,8 @@ public class OptimizedXmlSerializer
 
             if (value is not null) // Здесь можно сделать триггер на добавление элемента если даже он null
             {
-                if (!generalElementProperty.PropertyType.IsClass || generalElementProperty.PropertyType == typeof(string))
-                {
-                    headerString += xmlStringBuilder.WriteStartElement(customXmlElementName, null);
-                    headerString += value.ToString();
-                    headerString += xmlStringBuilder.WriteEndElement(customXmlElementName);
-                    continue;
-                }
-                    
-                if (generalElementProperty.PropertyType == typeof(IEnumerable<>))
+                if (generalElementProperty.PropertyType.IsGenericType && 
+                    generalElementProperty.PropertyType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 {
                     headerString = xmlStringBuilder.WriteStartElement(customXmlElementName, elementAttributes);
                     IEnumerable<object> list = (IEnumerable<object>)value;
@@ -244,6 +237,13 @@ public class OptimizedXmlSerializer
                     {
                         headerString += GetHeaderElements(headerString, xmlStringBuilder, item, type);
                     }
+                    headerString += xmlStringBuilder.WriteEndElement(customXmlElementName);
+                }
+                
+                if (!generalElementProperty.PropertyType.IsClass || generalElementProperty.PropertyType == typeof(string))
+                {
+                    headerString += xmlStringBuilder.WriteStartElement(customXmlElementName, null);
+                    headerString += value.ToString();
                     headerString += xmlStringBuilder.WriteEndElement(customXmlElementName);
                 }
                 else
