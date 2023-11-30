@@ -12,8 +12,9 @@ public class SerializingTestModel
     [CustomXmlHeaderElement(ElementName = "headerClass")] public Header HeaderClass { get; set; }
     [CustomXmlHeaderElement(ElementName = "headerBlock")] public IEnumerable<Header> HeaderBlock { get; set; }
     
-    
-    public IEnumerable<InfoPart> InfoBlock { get; set; }
+    [CustomXmlElement(ElementName = "info_string")] public string InfoString { get; set; }
+    [CustomXmlElement(ElementName = "info_class")] public InfoPart InfoClass { get; set; }
+    [CustomXmlElement(ElementName = "info_block")] public IEnumerable<InfoPart> InfoBlock { get; set; }
 }
 
 public class Header
@@ -34,7 +35,9 @@ public class SubHeader
 
 public class InfoPart
 {
-    public string InfoPartElement1 { get; set; }
-    public string InfoPartElement2 { get; set; }
-    public string InfoPartElement3 { get; set; }
+    [CustomXmlElement(ElementName = "InfoPart_attribute1")] public string InfoPartAttribute1 { get; set; }
+    [CustomXmlElement(ElementName = "InfoPart_attribute2")] public string InfoPartAttribute2 { get; set; }
+    [CustomXmlElement(ElementName = "InfoPart_element1")] public string InfoPartElement1 { get; set; }
+    [CustomXmlElement(ElementName = "InfoPart_element2")] public string InfoPartElement2 { get; set; }
+    [CustomXmlElement(ElementName = "InfoPart_element3")] public string InfoPartElement3 { get; set; }
 }
