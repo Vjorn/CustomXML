@@ -31,35 +31,8 @@ public class TestDataBuilder
             
             stringBuilder.Append(GetHeaderString(model, modelInfoCollector)); // Append header
             GetInfoParts(stringBuilder, model, modelInfoCollector); // Fill info part
+            stringBuilder.Append(GetFooterString(model, modelInfoCollector)); // Append footer
             
-            
-            
-            #region Open Footer Element
-
-            string footerElementKey = $"{model.GetType().Name}.{nameof(model.Footer)}";
-            stringBuilder.Append(XmlStringBuilder.WriteStartElement(modelInfoCollector.GetElementByKey(footerElementKey).Name));
-
-            #endregion
-            
-            #region FillFooter
-
-            string footerSubjectsCountElementKey = $"{footerElementKey}.{nameof(model.Footer.SubjectsCount)}";
-            stringBuilder.Append(XmlStringBuilder.WriteStartElement(modelInfoCollector.GetElementByKey(footerSubjectsCountElementKey).Name));
-            stringBuilder.Append("999");
-            stringBuilder.Append(XmlStringBuilder.WriteEndElement(modelInfoCollector.GetElementByKey(footerSubjectsCountElementKey).Name));
-            
-            string footerRecordsCountElementKey = $"{footerElementKey}.{nameof(model.Footer.RecordsCount)}";
-            stringBuilder.Append(XmlStringBuilder.WriteStartElement(modelInfoCollector.GetElementByKey(footerRecordsCountElementKey).Name));
-            stringBuilder.Append("999");
-            stringBuilder.Append(XmlStringBuilder.WriteEndElement(modelInfoCollector.GetElementByKey(footerRecordsCountElementKey).Name));
-
-            #endregion
-            
-            #region Close Footer Element
-
-            stringBuilder.Append(XmlStringBuilder.WriteEndElement(modelInfoCollector.GetElementByKey(footerElementKey).Name));
-
-            #endregion
             
             #region Close Root Element
 
@@ -111,9 +84,30 @@ public class TestDataBuilder
             "PrevFile.FileRegNum Value");
 
         headerStringBuilder.AppendElementEnd(modelInfoCollector.GetElementByKey(headPrevFileElementKey).Name);
+        
         headerStringBuilder.AppendElementEnd(modelInfoCollector.GetElementByKey(headElementKey).Name);
         
         return headerStringBuilder.ToString();
+    }
+
+    private string GetFooterString(SerializingTestModel model, ModelInfoCollector modelInfoCollector)
+    {
+        StringBuilder footerStringBuilder = new StringBuilder();
+
+        string footerElementKey = $"{model.GetType().Name}.{nameof(model.Footer)}";
+        footerStringBuilder.AppendElementStart(modelInfoCollector.GetElementByKey(footerElementKey).Name);
+        
+        footerStringBuilder.AppendElementWithValue(
+            modelInfoCollector.GetElementByKey($"{footerElementKey}.{nameof(model.Footer.SubjectsCount)}").Name,
+            "999");
+        
+        footerStringBuilder.AppendElementWithValue(
+            modelInfoCollector.GetElementByKey($"{footerElementKey}.{nameof(model.Footer.RecordsCount)}").Name,
+            "999");
+        
+        footerStringBuilder.AppendElementEnd(modelInfoCollector.GetElementByKey(footerElementKey).Name);
+        
+        return footerStringBuilder.ToString();
     }
 
     private void GetInfoParts(StringBuilder stringBuilder, SerializingTestModel model, ModelInfoCollector modelInfoCollector)
