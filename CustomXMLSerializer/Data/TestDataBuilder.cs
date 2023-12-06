@@ -28,62 +28,9 @@ public class TestDataBuilder
             stringBuilder.Append(">");
 
             #endregion
-
-            #region Open Header Element
-
-            string headElementKey = $"{model.GetType().Name}.{nameof(model.Head)}";
-            stringBuilder.Append(XmlStringBuilder.WriteStartElement(modelInfoCollector.GetElementByKey(headElementKey).Name));
-
-            #endregion
-
-            #region Fill Header
             
-            stringBuilder.AppendElementWithValue(modelInfoCollector, 
-                $"{headElementKey}.{nameof(model.Head.SourceInn)}", 
-                "SourceInn Value");
-            stringBuilder.AppendElementWithValue(modelInfoCollector, 
-                $"{headElementKey}.{nameof(model.Head.SourceOgrn)}", 
-                "SourceOgrn Value");
-            stringBuilder.AppendElementWithValue(modelInfoCollector, 
-                $"{headElementKey}.{nameof(model.Head.Date)}", 
-                "Date Value");
-            stringBuilder.AppendElementWithValue(modelInfoCollector, 
-                $"{headElementKey}.{nameof(model.Head.FileRegDate)}", 
-                "FileRegDate Value");
-            stringBuilder.AppendElementWithValue(modelInfoCollector, 
-                $"{headElementKey}.{nameof(model.Head.FileRegNum)}", 
-                "FileRegNum Value");
-            
-            
-            string headPrevFileElementKey = $"{headElementKey}.{nameof(model.Head.PrevFile)}";
-            stringBuilder.Append(XmlStringBuilder.WriteStartElement(modelInfoCollector.GetElementByKey(headPrevFileElementKey).Name));
-            
-            string headPrevFileFileRegDateElementKey = $"{headPrevFileElementKey}.{nameof(model.Head.PrevFile.FileRegDate)}";
-            stringBuilder.Append(XmlStringBuilder.WriteStartElement(modelInfoCollector.GetElementByKey(headPrevFileFileRegDateElementKey).Name));
-            stringBuilder.Append("PrevFile.FileRegDate Value");
-            stringBuilder.Append(XmlStringBuilder.WriteEndElement(modelInfoCollector.GetElementByKey(headPrevFileFileRegDateElementKey).Name));
-            
-            string headPrevFileFileRegNumElementKey = $"{headPrevFileElementKey}.{nameof(model.Head.PrevFile.FileRegNum)}";
-            stringBuilder.Append(XmlStringBuilder.WriteStartElement(modelInfoCollector.GetElementByKey(headPrevFileFileRegNumElementKey).Name));
-            stringBuilder.Append("PrevFile.FileRegNum Value");
-            stringBuilder.Append(XmlStringBuilder.WriteEndElement(modelInfoCollector.GetElementByKey(headPrevFileFileRegNumElementKey).Name));
-            
-            stringBuilder.Append(XmlStringBuilder.WriteEndElement(modelInfoCollector.GetElementByKey(headPrevFileElementKey).Name));
-
-            #endregion
-            
-            #region Close Header Element
-
-            stringBuilder.Append(XmlStringBuilder.WriteEndElement(modelInfoCollector.GetElementByKey(headElementKey).Name));
-
-            #endregion
-
-
-            #region Info Part
-
-            GetInfoParts(stringBuilder, model, modelInfoCollector);
-
-            #endregion
+            stringBuilder.Append(GetHeaderString(model, modelInfoCollector)); // Append header
+            GetInfoParts(stringBuilder, model, modelInfoCollector); // Fill info part
             
             
             
@@ -128,6 +75,45 @@ public class TestDataBuilder
             fileStream.Flush();
         }
         return model;
+    }
+
+    private string GetHeaderString(SerializingTestModel model, ModelInfoCollector modelInfoCollector)
+    {
+        StringBuilder headerStringBuilder = new StringBuilder();
+
+        string headElementKey = $"{model.GetType().Name}.{nameof(model.Head)}";
+        headerStringBuilder.AppendElementStart(modelInfoCollector.GetElementByKey(headElementKey).Name);
+
+        headerStringBuilder.AppendElementWithValue(
+            modelInfoCollector.GetElementByKey($"{headElementKey}.{nameof(model.Head.SourceInn)}").Name,
+            "SourceInn Value");
+        headerStringBuilder.AppendElementWithValue(
+            modelInfoCollector.GetElementByKey($"{headElementKey}.{nameof(model.Head.SourceOgrn)}").Name,
+            "SourceOgrn Value");
+        headerStringBuilder.AppendElementWithValue(
+            modelInfoCollector.GetElementByKey($"{headElementKey}.{nameof(model.Head.Date)}").Name,
+            "Date Value");
+        headerStringBuilder.AppendElementWithValue(
+            modelInfoCollector.GetElementByKey($"{headElementKey}.{nameof(model.Head.FileRegDate)}").Name,
+            "FileRegDate Value");
+        headerStringBuilder.AppendElementWithValue(
+            modelInfoCollector.GetElementByKey($"{headElementKey}.{nameof(model.Head.FileRegNum)}").Name,
+            "FileRegNum Value");
+
+        string headPrevFileElementKey = $"{headElementKey}.{nameof(model.Head.PrevFile)}";
+        headerStringBuilder.AppendElementStart(modelInfoCollector.GetElementByKey(headPrevFileElementKey).Name);
+
+        headerStringBuilder.AppendElementWithValue(
+            modelInfoCollector.GetElementByKey($"{headPrevFileElementKey}.{nameof(model.Head.PrevFile.FileRegDate)}").Name,
+            "PrevFile.FileRegDate Value");
+        headerStringBuilder.AppendElementWithValue(
+            modelInfoCollector.GetElementByKey($"{headPrevFileElementKey}.{nameof(model.Head.PrevFile.FileRegNum)}").Name,
+            "PrevFile.FileRegNum Value");
+
+        headerStringBuilder.AppendElementEnd(modelInfoCollector.GetElementByKey(headPrevFileElementKey).Name);
+        headerStringBuilder.AppendElementEnd(modelInfoCollector.GetElementByKey(headElementKey).Name);
+        
+        return headerStringBuilder.ToString();
     }
 
     private void GetInfoParts(StringBuilder stringBuilder, SerializingTestModel model, ModelInfoCollector modelInfoCollector)

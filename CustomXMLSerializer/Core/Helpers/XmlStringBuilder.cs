@@ -5,11 +5,21 @@ namespace CustomXMLSerializer.Core.Helpers;
 
 public static class XmlStringBuilder
 {
-    public static void AppendElementWithValue(this StringBuilder stringBuilder, ModelInfoCollector modelInfoCollector, string elementKey, string elementValue)
+    public static void AppendElementWithValue(this StringBuilder stringBuilder, string? elementName, string elementValue)
     {
-        stringBuilder.Append(WriteStartElement(modelInfoCollector.GetElementByKey(elementKey).Name));
+        stringBuilder.Append(WriteStartElement(elementName));
         stringBuilder.Append(elementValue);
-        stringBuilder.Append(WriteEndElement(modelInfoCollector.GetElementByKey(elementKey).Name));
+        stringBuilder.Append(WriteEndElement(elementName));
+    }
+
+    public static void AppendElementStart(this StringBuilder stringBuilder, string? elementName)
+    {
+        stringBuilder.Append(WriteStartElement(elementName));
+    }
+    
+    public static void AppendElementEnd(this StringBuilder stringBuilder, string? elementName)
+    {
+        stringBuilder.Append(WriteEndElement(elementName));
     }
     
     public static string WriteStartElement(string? elementName, bool hasAttributes = false)
