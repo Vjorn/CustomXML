@@ -1,6 +1,4 @@
-﻿using CustomXMLSerializer.Core;
-using CustomXMLSerializer.Core.Attributes.Helpers;
-using CustomXMLSerializer.Data;
+﻿using CustomXMLSerializer.Data;
 using CustomXMLSerializer.Models;
 
 Console.WriteLine("Hello, World!");
