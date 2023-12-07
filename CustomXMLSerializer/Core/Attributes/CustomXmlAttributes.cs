@@ -16,8 +16,19 @@ public class CustomXmlHeaderElementAttribute : CustomElementAttribute { }
 public class CustomXmlFooterElementAttribute : CustomElementAttribute { }
 
 
-[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
-public class CustomXmlElementAttribute : CustomElementAttribute { }
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter |
+                AttributeTargets.ReturnValue)]
+public class CustomXmlElementAttribute : CustomElementAttribute
+{
+    private bool _changeableElement = false;
+    
+    [AllowNull]
+    public bool ChangeableElement
+    {
+        get => _changeableElement;
+        set => _changeableElement = value;
+    }
+}
 
 
 
