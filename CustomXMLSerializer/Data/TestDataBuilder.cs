@@ -1,8 +1,10 @@
 using System.Text;
 using CustomXMLSerializer.Core.Attributes.Helpers;
 using CustomXMLSerializer.Core.Helpers;
+using CustomXMLSerializer.Data.Builders;
 using CustomXMLSerializer.Models;
 using CustomXMLSerializer.Models.Parts;
+using CustomXMLSerializer.Models.Parts.Events.Enums;
 
 namespace CustomXMLSerializer.Data;
 
@@ -28,9 +30,21 @@ public class TestDataBuilder
             stringBuilder.Append(">");
 
             #endregion
+
+            string headerString = GetHeaderString(model, modelInfoCollector);
+            stringBuilder.Append(headerString); // Append header
             
-            stringBuilder.Append(GetHeaderString(model, modelInfoCollector)); // Append header
-            GetInfoParts(stringBuilder, model, modelInfoCollector); // Fill info part
+            int templateMaxLength = Encoding.UTF8.GetBytes(headerString).Length 
+                                    + Encoding.UTF8.GetBytes(GetFooterString(model, modelInfoCollector)).Length;
+            
+            
+            RecordsBuilder recordsBuilder = new RecordsBuilder(templateMaxLength, 100000);
+
+            for (int i = 0; i < 5; i++)
+            {
+                stringBuilder.Append(recordsBuilder.GetRecordString(EventType.SubjectMainChanged, i));
+            }
+            
             stringBuilder.Append(GetFooterString(model, modelInfoCollector)); // Append footer
             
             
@@ -90,7 +104,8 @@ public class TestDataBuilder
         return headerStringBuilder.ToString();
     }
 
-    private string GetFooterString(SerializingTestModel model, ModelInfoCollector modelInfoCollector)
+    private string GetFooterString(SerializingTestModel model, 
+        ModelInfoCollector modelInfoCollector, int subjectsCount = 9999999, int recordsCount = 9999999)
     {
         StringBuilder footerStringBuilder = new StringBuilder();
 
@@ -99,31 +114,31 @@ public class TestDataBuilder
         
         footerStringBuilder.AppendElementWithValue(
             modelInfoCollector.GetElementByKey($"{footerElementKey}.{nameof(model.Footer.SubjectsCount)}").Name,
-            "999");
+            subjectsCount.ToString());
         
         footerStringBuilder.AppendElementWithValue(
             modelInfoCollector.GetElementByKey($"{footerElementKey}.{nameof(model.Footer.RecordsCount)}").Name,
-            "999");
+            recordsCount.ToString());
         
         footerStringBuilder.AppendElementEnd(modelInfoCollector.GetElementByKey(footerElementKey).Name);
         
         return footerStringBuilder.ToString();
     }
 
-    private void GetInfoParts(StringBuilder stringBuilder, SerializingTestModel model, ModelInfoCollector modelInfoCollector)
-    {
-        for (int i = 0; i < 5; i++)
-        {
-            string infoPartElementKey = $"{model.GetType().Name}.{nameof(model.InfoPart)}";
-            stringBuilder.Append(XmlStringBuilder.WriteStartElement(modelInfoCollector.GetElementByKey(infoPartElementKey).Name, true));
-            
-            string infoPartRecordNumberAttributeKey = $"{infoPartElementKey}.{nameof(InfoPart.RecordNumber)}";
-            stringBuilder.Append(XmlStringBuilder.WriteAttributeString(modelInfoCollector.GetAttributeByKey(infoPartRecordNumberAttributeKey).Name,
-                $"Recnumber is {i}"));
-            
-            stringBuilder.Append(">");
-            
-            stringBuilder.Append(XmlStringBuilder.WriteEndElement(modelInfoCollector.GetElementByKey(infoPartElementKey).Name));
-        }
-    }
+    // private void GetInfoParts(StringBuilder stringBuilder, SerializingTestModel model, ModelInfoCollector modelInfoCollector)
+    // {
+    //     for (int i = 0; i < 5; i++)
+    //     {
+    //         string infoPartElementKey = $"{model.GetType().Name}.{nameof(model.InfoPart)}";
+    //         stringBuilder.Append(XmlStringBuilder.WriteStartElement(modelInfoCollector.GetElementByKey(infoPartElementKey).Name, true));
+    //         
+    //         string infoPartRecordNumberAttributeKey = $"{infoPartElementKey}.{nameof(InfoPart.RecordNumber)}";
+    //         stringBuilder.Append(XmlStringBuilder.WriteAttributeString(modelInfoCollector.GetAttributeByKey(infoPartRecordNumberAttributeKey).Name,
+    //             $"Recnumber is {i}"));
+    //         
+    //         stringBuilder.Append(">");
+    //         
+    //         stringBuilder.Append(XmlStringBuilder.WriteEndElement(modelInfoCollector.GetElementByKey(infoPartElementKey).Name));
+    //     }
+    // }
 }

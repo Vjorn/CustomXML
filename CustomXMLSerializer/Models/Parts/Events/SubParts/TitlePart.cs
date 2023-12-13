@@ -2,6 +2,7 @@ using CustomXMLSerializer.Core.Attributes;
 
 namespace CustomXMLSerializer.Models.Parts.Events.SubParts;
 
+[CustomXmlRoot(ElementName = "title_part")]
 public class TitlePart
 {
     [CustomXmlElement(ElementName = "kski")] 

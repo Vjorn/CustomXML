@@ -12,8 +12,9 @@ public class SerializingTestModel
     [CustomXmlElement(ElementName = "head")] 
     public Head Head { get; set; }
     
-    [CustomXmlElement(ElementName = "info")]
-    public IEnumerable<InfoPart> InfoPart { get; set; }
+    /// <summary>
+    /// Here position to store records/events as info parts
+    /// </summary>
     
     [CustomXmlElement(ElementName = "footer")]
     public Footer Footer { get; set; }
