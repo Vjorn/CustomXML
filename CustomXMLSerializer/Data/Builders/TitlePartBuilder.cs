@@ -9,14 +9,40 @@ public static class TitlePartBuilder
 {
     public static string GetTitlePartString()
     {
-        Type titlePartType = typeof(TitlePart);
+        TitlePart titlePartModel = new TitlePart();
+        
+        Type titlePartType = titlePartModel.GetType();
         ModelInfoCollector titlePartModelInfoCollector = new ModelInfoCollector(titlePartType);
 
         StringBuilder titleStringBuilder = new StringBuilder();
+
+        string titlePartRootKey = titlePartType.Name;
+        string privateElementKey = $"{titlePartRootKey}.{nameof(titlePartModel.Private)}";
+        string privateNameElementKey = $"{privateElementKey}.{nameof(titlePartModel.Private.Name)}";
         
         titleStringBuilder.Append(
             XmlStringBuilder.WriteStartElement(titlePartModelInfoCollector.GetRootElementInfo().Name));
+        
+        titleStringBuilder.AppendElementStart(titlePartModelInfoCollector.GetElementByKey(privateElementKey).Name);
 
+        titleStringBuilder.AppendElementStart(titlePartModelInfoCollector.GetElementByKey(privateNameElementKey).Name);
+
+        titleStringBuilder.AppendElementWithValue(
+            titlePartModelInfoCollector.GetElementByKey($"{privateNameElementKey}.{nameof(titlePartModel.Private.Name.Last)}").Name,
+            "Пророк");
+        
+        titleStringBuilder.AppendElementWithValue(
+            titlePartModelInfoCollector.GetElementByKey($"{privateNameElementKey}.{nameof(titlePartModel.Private.Name.First)}").Name,
+            "Санбой");
+        
+        titleStringBuilder.AppendElementWithValue(
+            titlePartModelInfoCollector.GetElementByKey($"{privateNameElementKey}.{nameof(titlePartModel.Private.Name.Middle)}").Name,
+            "Легендарыч");
+        
+        titleStringBuilder.AppendElementEnd(titlePartModelInfoCollector.GetElementByKey(privateNameElementKey).Name);
+        
+        
+        titleStringBuilder.AppendElementEnd(titlePartModelInfoCollector.GetElementByKey(privateElementKey).Name);
 
         titleStringBuilder.Append(
             XmlStringBuilder.WriteEndElement(titlePartModelInfoCollector.GetRootElementInfo().Name));

@@ -63,14 +63,20 @@ public class RecordsBuilder
         StringBuilder stringBuilder = new StringBuilder();
         
         string recordNumberAttributeKey = $"{eventTypeType.Name}.{nameof(eventModel.RecordNumber)}";
-        string eventTypeAttributeKey = $"{eventTypeType.Name}.{nameof(eventModel.Event)}";
+        string eventAttributeKey = $"{eventTypeType.Name}.{nameof(eventModel.Event)}";
+        string eventDateAttributeKey = $"{eventTypeType.Name}.{nameof(eventModel.EventDate)}";
+        string actionAttributeKey = $"{eventTypeType.Name}.{nameof(eventModel.Action)}";
         
         stringBuilder.Append(
             XmlStringBuilder.WriteStartElement(eventModelInfoCollector.GetRootElementInfo().Name, true));
         stringBuilder.Append(XmlStringBuilder.WriteAttributeString(eventModelInfoCollector.GetAttributeByKey(recordNumberAttributeKey).Name,
             recordNumber.ToString()));
-        stringBuilder.Append(XmlStringBuilder.WriteAttributeString(eventModelInfoCollector.GetAttributeByKey(eventTypeAttributeKey).Name,
+        stringBuilder.Append(XmlStringBuilder.WriteAttributeString(eventModelInfoCollector.GetAttributeByKey(eventAttributeKey).Name,
             "1.7"));
+        stringBuilder.Append(XmlStringBuilder.WriteAttributeString(eventModelInfoCollector.GetAttributeByKey(eventDateAttributeKey).Name,
+            DateTime.Today.ToShortDateString()));
+        stringBuilder.Append(XmlStringBuilder.WriteAttributeString(eventModelInfoCollector.GetAttributeByKey(actionAttributeKey).Name,
+            "B"));
         stringBuilder.Append(">");
         
         stringBuilder.Append(TitlePartBuilder.GetTitlePartString());

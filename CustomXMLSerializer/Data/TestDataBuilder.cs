@@ -3,56 +3,63 @@ using CustomXMLSerializer.Core.Attributes.Helpers;
 using CustomXMLSerializer.Core.Helpers;
 using CustomXMLSerializer.Data.Builders;
 using CustomXMLSerializer.Models;
-using CustomXMLSerializer.Models.Parts;
 using CustomXMLSerializer.Models.Parts.Events.Enums;
 
 namespace CustomXMLSerializer.Data;
 
 public class TestDataBuilder
 {
-    public SerializingTestModel BuildData()
+    private int _recordIndex = 0;
+    private int _recordIndexMax = 500;
+    private int _templateLength = 0;
+    private int _currentLength = 0;
+    private int _maxLength = 5000;
+    
+    public void BuildData(SerializingTestModel model, ModelInfoCollector modelInfoCollector)
     {
-        string filePath = "text.xml";
-        SerializingTestModel model = new SerializingTestModel();
-
-        ModelInfoCollector modelInfoCollector = new ModelInfoCollector(model.GetType());
+        string filePath = $"text_{DateTime.Now.ToString("yyyyMMddHHmmssfff")}_{Guid.NewGuid()}.xml";
+        bool outOfLength = false;
         
         using (FileStream fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
         {
             StringBuilder stringBuilder = new StringBuilder();
-
-            #region Open Root Element
-
-            string versionAttributeKey = $"{model.GetType().Name}.{nameof(model.Version)}";
-            stringBuilder.Append(XmlStringBuilder.WriteStartElement(modelInfoCollector.GetRootElementInfo().Name, true));
-            stringBuilder.Append(XmlStringBuilder.WriteAttributeString(modelInfoCollector.GetAttributeByKey(versionAttributeKey).Name,
-                modelInfoCollector.GetAttributeByKey(versionAttributeKey).DefaultValue));
-            stringBuilder.Append(">");
-
-            #endregion
-
+            
+            string openRootString = GetRootString(model, modelInfoCollector);
+            string closeRootString = XmlStringBuilder.WriteEndElement(modelInfoCollector.GetRootElementInfo().Name);
             string headerString = GetHeaderString(model, modelInfoCollector);
+            
+            _templateLength = Encoding.UTF8.GetBytes(openRootString).Length 
+                             + Encoding.UTF8.GetBytes(closeRootString).Length
+                             + Encoding.UTF8.GetBytes(headerString).Length
+                             + Encoding.UTF8.GetBytes(GetFooterString(model, modelInfoCollector)).Length;
+
+            _currentLength = _templateLength;
+            
+            stringBuilder.Append(openRootString); // Open Root Element
             stringBuilder.Append(headerString); // Append header
             
-            int templateMaxLength = Encoding.UTF8.GetBytes(headerString).Length 
-                                    + Encoding.UTF8.GetBytes(GetFooterString(model, modelInfoCollector)).Length;
-            
-            
-            RecordsBuilder recordsBuilder = new RecordsBuilder(templateMaxLength, 100000);
+            RecordsBuilder recordsBuilder = new RecordsBuilder(_templateLength, _maxLength);
 
-            for (int i = 0; i < 5; i++)
+            for (int i = _recordIndex; i < _recordIndexMax; i++)
             {
-                stringBuilder.Append(recordsBuilder.GetRecordString(EventType.SubjectMainChanged, i));
+                _recordIndex = i;
+                string subjectMainChangedEventString =
+                    recordsBuilder.GetRecordString(EventType.SubjectMainChanged, _recordIndex);
+
+                int preCalculatedLength = _currentLength + Encoding.UTF8.GetBytes(subjectMainChangedEventString).Length;
+
+                if (preCalculatedLength > _maxLength)
+                {
+                    outOfLength = true;
+                    break;
+                }
+
+                _currentLength = preCalculatedLength;
+                stringBuilder.Append(subjectMainChangedEventString);
             }
             
             stringBuilder.Append(GetFooterString(model, modelInfoCollector)); // Append footer
-            
-            
-            #region Close Root Element
-
-            stringBuilder.Append(XmlStringBuilder.WriteEndElement(modelInfoCollector.GetRootElementInfo().Name));
-
-            #endregion
+            stringBuilder.Append(closeRootString); // Close Root Element
 
             string result = stringBuilder.ToString();
             
@@ -61,7 +68,24 @@ public class TestDataBuilder
             fileStream.Write(startRootElementBytes, 0, startRootElementBytes.Length);
             fileStream.Flush();
         }
-        return model;
+        
+        if (outOfLength)
+        {
+            BuildData(model, modelInfoCollector);
+        }
+    }
+
+    private string GetRootString(SerializingTestModel model, ModelInfoCollector modelInfoCollector)
+    {
+        StringBuilder rootStringBuilder = new StringBuilder();
+        
+        string versionAttributeKey = $"{model.GetType().Name}.{nameof(model.Version)}";
+        rootStringBuilder.Append(XmlStringBuilder.WriteStartElement(modelInfoCollector.GetRootElementInfo().Name, true));
+        rootStringBuilder.Append(XmlStringBuilder.WriteAttributeString(modelInfoCollector.GetAttributeByKey(versionAttributeKey).Name,
+            modelInfoCollector.GetAttributeByKey(versionAttributeKey).DefaultValue));
+        rootStringBuilder.Append(">");
+        
+        return rootStringBuilder.ToString();
     }
 
     private string GetHeaderString(SerializingTestModel model, ModelInfoCollector modelInfoCollector)

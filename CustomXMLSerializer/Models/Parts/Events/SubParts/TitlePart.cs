@@ -41,12 +41,21 @@ public sealed class Private
 
 public sealed class NamePrivate
 {
+    /// <summary>
+    /// Фамилия
+    /// </summary>
     [CustomXmlElement(ElementName = "last", ChangeableElement = true)]
     public string Last { get; set; }
 
+    /// <summary>
+    /// Имя
+    /// </summary>
     [CustomXmlElement(ElementName = "first", ChangeableElement = true)]
     public string First { get; set; }
 
+    /// <summary>
+    /// Отчество
+    /// </summary>
     [CustomXmlElement(ElementName = "middle", ChangeableElement = true)]
     public string Middle { get; set; }
 }
